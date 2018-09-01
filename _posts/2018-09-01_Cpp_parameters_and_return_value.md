@@ -100,7 +100,50 @@ after return addr:  0x7ffca71b5ca0    //same address
 ```
 I think it is the compiler who makes the optimization to save the memory space by not having reallocation overhead.
 
-*But* when I tested it with an already exist variable, the results were different.
+Things turn out that I am right, this is called *"Return Value Optimization"(RVO)*, you can check it out in detail from [wikipedia](https://en.wikipedia.org/wiki/Copy_elision#Return_value_optimization) or [cpp reference](https://en.cppreference.com/w/cpp/language/copy_elision).
+
+You can TURN IT OFF if you do care about the side effect in copy function by using *compiling option "-fno-elide-constructors"
+*
+Basically, the compiler *elide* the object copy process to save more resources. This is called *Copy Elision*. It happens in many scenarios: 
+
+1) when there's a copy initialization, the compiler will optimize it by substituting it with direct initialization. 
+```
+#include <iostream>
+
+int n = 0;
+struct C {
+  explicit C(int) {}
+  C(const C&) { ++n; } // the copy constructor has a visible side effect
+};                     // it modifies an object with static storage duration
+
+int main() {
+  C c1(42);     // direct-initialization, calls C::C(42)
+  C c2 = C(42); // copy-initialization, should call C::C( C(42) ), after optimization ==>calls C::C(42)
+  std::cout << n << std::endl; // prints 0 if the copy was elided, 1 otherwise
+  return 0;
+}
+```
+
+2) when function returns a temporary value, also when the return value is assigned to another object
+```
+#include <iostream>
+struct C {
+  C() {}
+  C(const C&) { std::cout << "A copy was made.\n"; }
+};
+C f() {
+  return C();   //nameless temporary object
+}
+int main() {
+  std::cout << "Hello World!\n";
+  C obj = f();  //copy initialization
+  return 0;
+}
+//output: Hello World!  
+//There is no copy anymore
+```
+
+*So* when I tested it with an already exist variable, the results were different.
 ```
 int main()
 {
@@ -144,9 +187,41 @@ int main()
 }
 //////// output /////////
 /*
-n addr: 0x7ffdc26535ec
+n addr: 0x7ffdc26535ec         //This is the address of PARAMETER
 n addr: 0x7ffdc26535ec
 n addr: 0x7ffdc26535ec
 */
 
 ```
+I change it to show the address of argument so we can see the difference.
+```
+#include <iostream>
+using namespace std;
+int print(int n) {
+    cout << "n addr: " << &n << endl;
+    return n;
+}
+int main()
+{
+    int n = 3;
+    cout << "n addr: " << &n << endl;
+    n = print(n);  
+    cout << "n addr: " << &n << endl;
+    n = print(4);
+    cout << "n addr: " << &n << endl;
+    n =print(2147383647);
+    cout << "n addr: " << &n << endl;
+    return 0;
+}
+//////// output /////////
+/*
+n addr: 0x7ffe6533e9ec  //ARGUMENT
+n addr: 0x7ffe6533e9cc  //PARAMETER
+n addr: 0x7ffe6533e9ec
+n addr: 0x7ffe6533e9cc
+n addr: 0x7ffe6533e9ec
+n addr: 0x7ffe6533e9cc
+n addr: 0x7ffe6533e9ec
+*/
+```
+
