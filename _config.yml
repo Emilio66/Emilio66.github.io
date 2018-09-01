@@ -89,7 +89,7 @@ author:
   avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
   bio              : "I am an amazing person."
   location         : "Shanghai, China"
-  email            : zhaozhiyong@sjtu.edu.cn
+  email            : emiliocosy@163.com
   uri              :
   home             : # null (default), "absolute or relative url to link to author home"
   bitbucket        :
@@ -98,7 +98,7 @@ author:
   flickr           :
   facebook         :
   foursquare       :
-  github           : https://github.com/Emilio66
+  github           : Emilio66
   gitlab           :
   google_plus      :
   keybase          :
