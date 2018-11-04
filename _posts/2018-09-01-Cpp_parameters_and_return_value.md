@@ -2,6 +2,12 @@
 
 Today I was wondering how the parameters and arguments work in C++ as well as return values. After experimenting, I have gotton a better understanding about these stuff and share them in this post.
 
+## Main Topics
+- Difference between Parameters and Arguments
+- Return Value Optimization
+- Copy Elision
+
+
 ## Parameters and Arguments
 
 > Parameter is variable in the declaration of function.   
