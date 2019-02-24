@@ -1,6 +1,18 @@
-# Emilio Zhao's Website
-> WELCOME to my site, this is the place where I will record the learning experience, knowledge or skills in my career. 
+---
+layout: page
+title: About
+permalink: /about/
+---
 
-> It will not only includes things in the field of computer science, but also some lessons I learned from life, and hobbies like traveling experience will be added as well. In a word, the website would be a public history of my growth. 
+This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
 
-> Again, thank you so much for visiting, you won't be disappointed:)
+You can find the source code for Minima at GitHub:
+[jekyll][jekyll-organization] /
+[minima](https://github.com/jekyll/minima)
+
+You can find the source code for Jekyll at GitHub:
+[jekyll][jekyll-organization] /
+[jekyll](https://github.com/jekyll/jekyll)
+
+
+[jekyll-organization]: https://github.com/jekyll
