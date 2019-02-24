@@ -1,0 +1,372 @@
+<h1 id="implement-reflection-in-c">Implement Reflection in C++</h1>
+<p>Since C++ hasn’t support <em>Reflection</em> mechanism as Java, We need to figure out some smart way to implement it for daily use.
+Here I tried 3 ways to implement it:</p>
+<ul>
+  <li>Function Pointer</li>
+  <li>Class Builder Factory</li>
+  <li>Macro and Template</li>
+</ul>
+
+<h2 id="function-pointer">Function Pointer</h2>
+<p>The core requirement of reflection in my project is “<strong>reflect</strong> an object from a <strong>string</strong>” so that we can build class from configuration file.</p>
+
+<p>Therefore, the basic thing is to build a bridge between a string with Class builder. So we need a Map to bridge the two, and in order to create an object, we need a function which could <strong>new</strong> a required object.</p>
+
+<p>Here we go:</p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;map&gt;
+</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="c1">//MAP: class name =&gt; class builder function</span>
+<span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="p">)()</span><span class="o">&gt;</span> <span class="n">m</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">A</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">A</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A built"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">A</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A destoryed"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from A"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">B</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">B</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"B built"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">B</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"B destoryed"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from B"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// Actual class builder function</span>
+<span class="n">A</span><span class="o">*</span> <span class="nf">build_A</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="n">A</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="n">B</span><span class="o">*</span> <span class="nf">build_B</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="n">B</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// building function register</span>
+<span class="kt">void</span> <span class="nf">register_A</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="p">.</span><span class="n">end</span><span class="p">())</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="p">)())</span><span class="n">build_A</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">register_B</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="p">.</span><span class="n">end</span><span class="p">())</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="p">)())</span><span class="n">build_B</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// retrieve class instance from map</span>
+<span class="kt">void</span><span class="o">*</span> <span class="nf">new_instance</span> <span class="p">(</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">m</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">auto</span> <span class="n">fp</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="p">)())</span><span class="n">m</span><span class="p">[</span><span class="n">name</span><span class="p">];</span>
+        <span class="k">return</span> <span class="n">fp</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+   <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hello Template"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+   <span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="s">"A"</span><span class="p">;</span>
+   <span class="n">register_A</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+   <span class="n">A</span><span class="o">*</span> <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="o">*</span><span class="p">)</span><span class="n">new_instance</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+   <span class="n">a</span><span class="o">-&gt;</span><span class="n">hi</span><span class="p">();</span>
+   <span class="k">delete</span> <span class="n">a</span><span class="p">;</span>
+   <span class="n">a</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+   <span class="n">name</span> <span class="o">=</span> <span class="s">"B"</span><span class="p">;</span>
+   <span class="n">register_B</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+   <span class="n">B</span><span class="o">*</span> <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">B</span><span class="o">*</span><span class="p">)</span><span class="n">new_instance</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+   <span class="n">b</span><span class="o">-&gt;</span><span class="n">hi</span><span class="p">();</span>
+   <span class="k">delete</span> <span class="n">b</span><span class="p">;</span>
+   <span class="n">b</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This solution does bridge class builder and class name, however, the drawbacks are also obvious:</p>
+<ul>
+  <li>everytime we have a new class, we need to create a class builder function and a register function</li>
+  <li>void* is not straightforward and user friendly, we need type conversion(if we know the exact type, why don’t we just create it directly?)</li>
+</ul>
+
+<h2 id="class-builder-factory">Class Builder Factory</h2>
+<p>Solution 1 ignores the fact that the object we reflect are mostly the <strong>“changing part”</strong> i.e. the derived class and the <strong>base class</strong> is usually the interface between different parties.</p>
+
+<p>Therefore we could utilize the base class and use <strong>“Factory Design Pattern”</strong>.</p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;map&gt;
+#include &lt;vector&gt;
+</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">Base</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from Base"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">A</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Base</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">A</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A built"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">A</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A destoryed"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from A"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">B</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Base</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">B</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"B built"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">B</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"B destoryed"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from B"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// Base Builder</span>
+<span class="k">class</span> <span class="nc">Builder</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="k">virtual</span> <span class="n">Base</span><span class="o">*</span> <span class="n">build</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Base Builder "</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+        <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// MAP: class name =&gt; class builder</span>
+<span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">Builder</span><span class="o">*&gt;</span> <span class="n">m</span><span class="p">;</span>
+
+<span class="c1">//MACRO: eliminate duplicate code</span>
+<span class="c1">// 1. create builder for each class derived from Base class</span>
+<span class="c1">// 2. register the class builder with class name in Map m</span>
+<span class="c1">// here we used constructor to do the 2nd step because it will not get the expected result.//TODO figure out the reason</span>
+<span class="cp">#define REGISTER_CLASS(clazz) {\
+    class Builder##clazz : public Builder {\
+        public:\
+            Builder##clazz() {\
+                cout &lt;&lt; " =&gt; "&lt;&lt; #clazz &lt;&lt; endl;\
+            }\
+            clazz* build() {\
+                cout &lt;&lt; "Derived building" &lt;&lt; endl;\
+                return new clazz;\
+            }\
+    };\
+    class Register##clazz {\
+    public: \
+        Register##clazz() {\
+            if (m.find(#clazz) == m.end()) {\
+                m[#clazz] = new Builder##clazz;\
+                cout &lt;&lt; #clazz &lt;&lt; " was built " &lt;&lt; endl;\
+            }\
+        }\
+    };\
+    Register##clazz rc;\
+}
+</span>
+<span class="c1">// Get class instance, macro cannot return value so I used template</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="n">T</span><span class="o">*</span> <span class="n">new_instance</span><span class="p">(</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"map size: "</span> <span class="o">&lt;&lt;</span> <span class="n">m</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">m</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">auto</span> <span class="n">fp</span> <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="n">name</span><span class="p">];</span>
+        <span class="k">return</span> <span class="n">fp</span><span class="o">-&gt;</span><span class="n">build</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">main</span><span class="p">()</span>
+<span class="p">{</span>
+   <span class="n">REGISTER_CLASS</span><span class="p">(</span><span class="n">A</span><span class="p">);</span>
+   <span class="n">string</span> <span class="n">name</span> <span class="o">=</span> <span class="s">"A"</span><span class="p">;</span>
+   <span class="n">Base</span><span class="o">*</span> <span class="n">a</span> <span class="o">=</span> <span class="n">new_instance</span><span class="o">&lt;</span><span class="n">Base</span><span class="o">&gt;</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+   <span class="k">if</span> <span class="p">(</span><span class="nb">NULL</span> <span class="o">==</span> <span class="n">a</span><span class="p">)</span> <span class="p">{</span>
+       <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"ERROR in building"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+       <span class="n">a</span><span class="o">-&gt;</span><span class="n">hi</span><span class="p">();</span>
+       <span class="k">delete</span> <span class="n">a</span><span class="p">;</span>
+       <span class="n">a</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+   <span class="p">}</span>
+   <span class="n">REGISTER_CLASS</span><span class="p">(</span><span class="n">B</span><span class="p">);</span>
+   <span class="n">name</span> <span class="o">=</span> <span class="s">"B"</span><span class="p">;</span>
+   <span class="n">Base</span><span class="o">*</span> <span class="n">b</span> <span class="o">=</span> <span class="n">new_instance</span><span class="o">&lt;</span><span class="n">Base</span><span class="o">&gt;</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+   <span class="n">b</span><span class="o">-&gt;</span><span class="n">hi</span><span class="p">();</span>
+   <span class="k">delete</span> <span class="n">b</span><span class="p">;</span>
+   <span class="n">b</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>This solution works well. Can we do better?
+When I used <strong>template</strong>, it gave me a hint: <em>template can pass Type into function</em>, so we could utilize this trait to get the <strong>Type</strong> information instead of using MACRO concatation. So here I got the solution 3:</p>
+
+<h2 id="final-version-of-reflection">Final Version of Reflection</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/*
+Usage of 2 Macro:
+REFLECT_NEW(class_name) //create object from string
+REFLECT_REGISTER(base_class_name, derived_class_name) //register a reflection for derived class
+*/</span>
+<span class="cp">#include &lt;iostream&gt;
+#include &lt;map&gt;
+</span>
+<span class="k">namespace</span> <span class="n">common</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">reflect</span> <span class="p">{</span>
+    <span class="k">using</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">;</span>
+    <span class="k">using</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="p">;</span>
+    <span class="k">using</span> <span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="p">;</span>
+    <span class="k">using</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+<span class="cm">/*
+* Main Class for Reflection Mechanism, managing registered class creation function
+*/</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">TBase</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">Reflection</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="k">typedef</span> <span class="n">TBase</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="n">TFunc</span><span class="p">)();</span>    <span class="c1">//define object's builder function type</span>
+    <span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span> <span class="n">TFunc</span><span class="o">&gt;</span> <span class="n">register_map</span><span class="p">;</span>   <span class="c1">//bridge map, classname =&gt; creation function</span>
+
+    <span class="c1">// the actual action of putting builder function into map</span>
+    <span class="k">static</span> <span class="kt">int</span> <span class="nf">register_class</span><span class="p">(</span><span class="n">string</span> <span class="n">name</span><span class="p">,</span> <span class="n">TFunc</span> <span class="n">func</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">register_map</span><span class="o">&amp;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">_get_map</span><span class="p">();</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+            <span class="n">m</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="p">;</span>
+            <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">name</span> <span class="o">&lt;&lt;</span> <span class="s">" registered successfully! "</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="n">name</span> <span class="o">&lt;&lt;</span> <span class="s">" has already been registered! "</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// the actual action of retrieving builder function from map and then invoking it </span>
+    <span class="k">static</span> <span class="n">TBase</span><span class="o">*</span> <span class="nf">new_instance</span><span class="p">(</span><span class="n">string</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">register_map</span><span class="o">&amp;</span> <span class="n">m</span> <span class="o">=</span> <span class="n">_get_map</span><span class="p">();</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">m</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">m</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="n">m</span><span class="p">[</span><span class="n">name</span><span class="p">]();</span>
+        <span class="p">}</span><span class="k">else</span> <span class="p">{</span>
+            <span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">" Can not find class "</span> <span class="o">&lt;&lt;</span> <span class="n">name</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+    <span class="c1">// singleton for register map</span>
+    <span class="k">static</span> <span class="n">register_map</span><span class="o">&amp;</span> <span class="n">_get_map</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">static</span> <span class="n">register_map</span> <span class="n">_map</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">_map</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Instantiation helper, load register_map once when initialization starts</span>
+    <span class="k">class</span> <span class="nc">Instantiation</span> <span class="p">{</span>
+    <span class="k">public</span><span class="o">:</span>
+        <span class="n">Instantiation</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Instantiation instantiated"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="n">Reflection</span><span class="o">&lt;</span><span class="n">TBase</span><span class="o">&gt;::</span><span class="n">_get_map</span><span class="p">();</span>
+        <span class="p">}</span>
+        <span class="k">static</span> <span class="kt">void</span> <span class="n">instantiate</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"called instantiate"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">};</span>
+    <span class="c1">// static variable declaration</span>
+    <span class="k">static</span> <span class="n">Instantiation</span> <span class="n">_instant</span><span class="p">;</span>
+    
+    <span class="c1">//hide constructor &amp; destructor</span>
+    <span class="n">Reflection</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="o">~</span><span class="n">Reflection</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">};</span>
+
+<span class="c1">// static variable definition</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">TBase</span><span class="o">&gt;</span>
+<span class="k">typename</span> <span class="n">Reflection</span><span class="o">&lt;</span><span class="n">TBase</span><span class="o">&gt;::</span><span class="n">Instantiation</span> <span class="n">Reflection</span><span class="o">&lt;</span><span class="n">TBase</span><span class="o">&gt;::</span><span class="n">_instant</span><span class="p">;</span>  <span class="c1">//will invoke its constructor to load register_map</span>
+
+<span class="c1">// Registor generate class creation function for each class intended to register</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">TBase</span><span class="p">,</span> <span class="k">typename</span> <span class="n">TDerived</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">Registor</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="k">static</span> <span class="n">TBase</span><span class="o">*</span> <span class="n">new_func</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">TDerived</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">static</span> <span class="kt">void</span> <span class="n">register_for</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="n">name</span><span class="p">[])</span> <span class="p">{</span>
+        <span class="n">Reflection</span><span class="o">&lt;</span><span class="n">TBase</span><span class="o">&gt;::</span><span class="n">register_class</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">new_func</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// register class builder macro</span>
+<span class="cp">#define REFLECT_REGISTER(base_classname, derived_classname) {\
+    ::common::reflect::Registor&lt;base_classname, derived_classname&gt;::register_for(#derived_classname);\
+}
+</span>
+<span class="c1">// new class macro</span>
+<span class="cp">#define REFLECT_NEW(base_classname, derived_classname) \
+    ::common::reflect::Reflection&lt;base_classname&gt;::new_instance(derived_classname);
+</span>
+<span class="c1">///// UNIT TESTING //////</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">Base</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="k">virtual</span> <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from Base"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">A</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Base</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">A</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A built"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">A</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"A destoryed"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from A"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">B</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Base</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">B</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"B built"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">B</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"B destoryed"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">void</span> <span class="n">hi</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hi from B"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// Simple Usage</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">REFLECT_REGISTER</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="n">A</span><span class="p">);</span>
+    <span class="n">Base</span><span class="o">*</span> <span class="n">b</span> <span class="o">=</span> <span class="n">REFLECT_NEW</span><span class="p">(</span><span class="n">Base</span><span class="p">,</span> <span class="s">"A"</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">NULL</span> <span class="o">!=</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">-&gt;</span><span class="n">hi</span><span class="p">();</span>
+    <span class="k">else</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Null found!"</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>This solution requires some knowledge about <em>static storage</em>, <em>template instantiation</em> and <em>macro</em>. 
+Please don’t heasitate to leave a message if you have any question, thanks:)</p>
+

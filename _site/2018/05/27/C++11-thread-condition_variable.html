@@ -1,0 +1,122 @@
+<h2 id="usage-of-condition-variable-in-c11">Usage of Condition Variable in C++11</h2>
+<p>In concurrent programming, <em>Monitor</em> is a synchronization mechanism that allows threads to perform exclusive access, wait for a certain condition to be staisfied and waken up blocked thread. <em>Condition Variable</em> is an object that represents a condition for which threads are waiting. Before the condition meets, all the waited threads are blocked or slept. Once the conditon met, they will be notified and ready to continue running.
+<a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Ref: WiKi</a></p>
+
+<p>In c++11, there is class <em>thread</em> that stands for individual threads of execution. It’s a encapsulation of thread that is able to execute correctly among all platform. There’s no need to use Window API and spare the efforts to use handlers. <a href="http://www.cplusplus.com/reference/thread/thread/">For more details, see thread.h</a></p>
+
+<blockquote>
+  <p>A condition variable is an object able to block the calling thread until notified to resume.
+It uses a unique_lock (over a mutex) to lock the thread when one of its wait functions is called. The thread remains blocked until woken up by another thread that calls a notification function on the same condition_variable object.
+Objects of type condition_variable always use unique_lock<mutex> to wait: for an alternative that works with any kind of lockable type, see condition_variable_any
+[Reference](http://www.cplusplus.com/reference/condition_variable/condition_variable/)</mutex></p>
+</blockquote>
+
+<h3 id="basic-usage">Basic Usage:</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// condition_variable example
+
+#include &lt;iostream&gt;           // std::cout
+#include &lt;thread&gt;             // std::thread
+#include &lt;mutex&gt;              // std::mutex, std::unique_lock
+#include &lt;condition_variable&gt; // std::condition_variable
+
+std::mutex mtx;
+std::condition_variable cv;   //condition varibale object
+bool ready = false;
+
+void print_id (int id) {
+  std::unique_lock&lt;std::mutex&gt; lck(mtx); //acquire lock
+  while (!ready) 
+    cv.wait(lck); //!!NOTICE: If condition not met, lck will give away the lock until condition is ready, try to regain the lock 
+  // do tasks
+  std::cout &lt;&lt; "thread " &lt;&lt; id &lt;&lt; '\n';
+}
+
+void go() {
+  std::unique_lock&lt;std::mutex&gt; lck(mtx);
+  ready = true;
+  cv.notify_all();  //changes happen in main thread and notify waited threads
+}
+
+int main ()
+{
+  std::thread threads[10];
+  // spawn 10 threads:
+  for (int i=0; i&lt;10; ++i)
+    threads[i] = std::thread(print_id,i);
+
+  std::cout &lt;&lt; "10 threads ready to race...\n";
+  go();    // go!
+
+  for (auto&amp; th : threads)
+    th.join();
+
+  return 0;
+}
+</code></pre></div></div>
+
+<h3 id="use-condition-variable-to-implement-classic-producer-consumer-model">Use condition variable to implement classic <em>Producer-consumer Model</em>:</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;iostream&gt;
+#include &lt;condition_variable&gt;
+#include &lt;thread&gt;
+#include &lt;chrono&gt;
+#include &lt;mutex&gt;
+
+using namespace std;
+
+//queue mutex
+mutex queue_mutex;
+
+condition_variable producer_cv;
+condition_variable consumer_cv;
+
+int size = 0;
+int MAX = 10;
+bool empty() {return size == 0;}
+bool full() {return size == MAX;}
+
+void produce() {
+    //acquire lock
+    unique_lock&lt;mutex&gt; full_lock(queue_mutex);
+    //check if predicate is true
+    while (full()) {
+        //wait until queue is not full, wake me up
+        producer_cv.wait(full_lock); 
+    }
+    //produce something
+    cout &lt;&lt;"size: " &lt;&lt; size &lt;&lt; " Hurray, produce produce !!! --from thread "&lt;&lt; this_thread::get_id() &lt;&lt; endl;
+    ++size;
+    consumer_cv.notify_one();//notify a consumer that product is ready 
+}
+
+void consume() {    
+    unique_lock&lt;mutex&gt; empty_lock(queue_mutex);
+    while (empty()) {
+        consumer_cv.wait(empty_lock); //when not empty, wake me up
+    }
+    //consume
+    cout  &lt;&lt;"size: " &lt;&lt; size &lt;&lt; "Yummy, consuming is great! --from thread "&lt;&lt; this_thread::get_id() &lt;&lt; endl;
+    --size;
+    producer_cv.notify_one();//notify a produer that repo is available 
+}
+
+int main() {
+    thread pts [10];
+    thread cts [10];
+
+    for (int i = 0; i &lt; 10; i++) 
+       pts[i] = thread(produce);
+
+    for (int i = 0; i &lt; 10; i++)
+       cts[i] = thread(consume);
+
+    for (int i = 0; i &lt; 10; i++) {
+        pts[i].join();
+        cts[i].join();
+    } 
+    return 0;
+}
+</code></pre></div></div>
+
+<p><a href="https://gist.github.com/Emilio66">Recommend code snippet stored in gist</a></p>
