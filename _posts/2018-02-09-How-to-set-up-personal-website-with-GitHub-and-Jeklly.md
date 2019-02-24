@@ -1,3 +1,9 @@
+---
+layout: post
+title: "How to set up your personal website with GitHub Pages and Jekyll"
+
+categories: manual
+---
 ## How to set up your personal website with GitHub Pages and Jekyll
 
 As a newbie in computer science, I find it necessary to set up my personal website where I can record my knowledge, skills, tips, etc and share my experiences in the learning process. So here it is:)

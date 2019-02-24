@@ -1,3 +1,9 @@
+---
+layout: post
+title: "Implement Reflection in C++"
+
+categories: tech
+---
 # Implement Reflection in C++
 Since C++ hasn't support *Reflection* mechanism as Java, We need to figure out some smart way to implement it for daily use.
 Here I tried 3 ways to implement it:

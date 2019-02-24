@@ -1,3 +1,9 @@
+---
+layout: post
+title: "Usage of Condition Variable in C++11"
+
+categories: tech
+---
 ## Usage of Condition Variable in C++11
 In concurrent programming, *Monitor* is a synchronization mechanism that allows threads to perform exclusive access, wait for a certain condition to be staisfied and waken up blocked thread. *Condition Variable* is an object that represents a condition for which threads are waiting. Before the condition meets, all the waited threads are blocked or slept. Once the conditon met, they will be notified and ready to continue running.
 [Ref: WiKi](https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables)

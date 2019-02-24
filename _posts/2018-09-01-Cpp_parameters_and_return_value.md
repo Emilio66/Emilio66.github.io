@@ -1,3 +1,9 @@
+---
+layout: post
+title: "C++ Parameters and return values"
+
+categories: tech
+---
 # C++ Parameters and return values
 
 Today I was wondering how the parameters and arguments work in C++ as well as return values. After experimenting, I have gotton a better understanding about these stuff and share them in this post.
