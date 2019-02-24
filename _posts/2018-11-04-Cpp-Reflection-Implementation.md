@@ -11,7 +11,7 @@ The core requirement of reflection in my project is "**reflect** an object from 
 Therefore, the basic thing is to build a bridge between a string with Class builder. So we need a Map to bridge the two, and in order to create an object, we need a function which could **new** a required object.
 
 Here we go:
-```
+```cpp
 #include <iostream>
 #include <map>
 
@@ -99,7 +99,7 @@ This solution does bridge class builder and class name, however, the drawbacks a
 Solution 1 ignores the fact that the object we reflect are mostly the **"changing part"** i.e. the derived class and the **base class** is usually the interface between different parties. 
 
 Therefore we could utilize the base class and use **"Factory Design Pattern"**.
-```
+```cpp
 #include <iostream>
 #include <map>
 #include <vector>
@@ -215,7 +215,7 @@ When I used **template**, it gave me a hint: *template can pass Type into functi
 
 ## Final Version of Reflection 
 
-```
+```cpp
 /*
 Usage of 2 Macro:
 REFLECT_NEW(class_name) //create object from string
@@ -231,11 +231,14 @@ namespace reflect {
     using std::cerr;
     using std::endl;
 
+/*
+* Main Class for Reflection Mechanism, managing registered class creation function
+*/
 template <typename TBase>
 class Reflection {
 public:
     typedef TBase* (*TFunc)();    //define object's builder function type
-    typedef std::map<string, TFunc> register_map;   //bridge map
+    typedef std::map<string, TFunc> register_map;   //bridge map, classname => creation function
 
     // the actual action of putting builder function into map
     static int register_class(string name, TFunc func) {
@@ -268,7 +271,7 @@ private:
         return _map;
     }
 
-    // Instantiation helper
+    // Instantiation helper, load register_map once when initialization starts
     class Instantiation {
     public:
         Instantiation() {
@@ -289,9 +292,9 @@ private:
 
 // static variable definition
 template <typename TBase>
-typename Reflection<TBase>::Instantiation Reflection<TBase>::_instant;
+typename Reflection<TBase>::Instantiation Reflection<TBase>::_instant;  //will invoke its constructor to load register_map
 
-// reflector is the entry for outside users
+// Registor generate class creation function for each class intended to register
 template <typename TBase, typename TDerived>
 class Registor {
 public:
@@ -307,8 +310,7 @@ public:
 
 // register class builder macro
 #define REFLECT_REGISTER(base_classname, derived_classname) {\
-    using common::reflect::Registor;\
-    Registor<base_classname, derived_classname>::register_for(#derived_classname);\
+    ::common::reflect::Registor<base_classname, derived_classname>::register_for(#derived_classname);\
 }
 
 // new class macro
